@@ -47,7 +47,7 @@ class Pointer{
     */
     Pointer(){ Pointer(NULL); }
     Pointer(T*);
-    Pointer(const Pointer &);   // Copy constructor.
+    Pointer(const Pointer &ob);   // Copy constructor.
     ~Pointer();  // Destructor for Pointer.
     
     // Collect garbage. Returns true if at least
@@ -59,7 +59,7 @@ class Pointer{
     Pointer &operator=(Pointer &rv);
     // Return a reference to the object pointed
     // to by this Pointer.
-    T &operator*(){
+    T &operator*() {
         return *addr;
     }
     // Return the address being pointed to.
@@ -70,7 +70,7 @@ class Pointer{
     // Conversion function to T *.
     operator T *() { return addr; }
     // Return an Iter to the start of the allocated memory.
-    Iter<T> begin(){
+    Iter<T> begin() {
         int _size;
         if (isArray)
             _size = arraySize;
@@ -79,7 +79,7 @@ class Pointer{
         return Iter<T>(addr, addr, addr + _size);
     }
     // Return an Iter to one past the end of an allocated array.
-    Iter<T> end(){
+    Iter<T> end() {
         int _size;
         if (isArray)
             _size = arraySize;
@@ -104,7 +104,7 @@ bool Pointer<T, size>::first = true;
 
 // Constructor for both initialized and uninitialized objects. -> see class interface
 template<class T,int size>
-Pointer<T,size>::Pointer(T *t){
+Pointer<T,size>::Pointer(T *t) {
     // Register shutdown() as an exit function.
     if (first)
         atexit(shutdown);
@@ -125,7 +125,18 @@ Pointer<T,size>::Pointer(T *t){
 
 // Copy constructor.
 template< class T, int size>
-Pointer<T,size>::Pointer(const Pointer &ob) : Pointer(ob.addr) {} // DONE: Implement Pointer constructor
+Pointer<T,size>::Pointer(const Pointer &ob) {
+    // DONE: Implement Pointer constructor
+    typename std::list<PtrDetails<T> >::iterator p;
+    p = findPtrInfo(ob.addr);
+    p->refcount++; // increment ref count
+    addr = ob.addr;
+    arraySize = ob.arraySize;
+    if (arraySize > 0)
+        isArray = true;
+    else
+        isArray = false;
+} 
     
 // Destructor for Pointer.
 template <class T, int size>
@@ -145,25 +156,29 @@ bool Pointer<T, size>::collect() {
     // DONE: Implement collect function
     // Note: collect() will be called in the destructor
     bool memfreed = false;
-    
     typename std::list<PtrDetails<T> >::iterator it = refContainer.begin();
-    while (it != refContainer.end()) {
+
+    do {
         if (it->refcount == 0) {
             
-            if (it->isArray) { delete[] it->memPtr; } 
-            else { delete it->memPtr; }
+            // Free memory if not null
+            if(it->memPtr) {
+                if (it->isArray) { delete[] it->memPtr; } 
+                else { delete it->memPtr; }
+            }
 
             memfreed = true;
             it = refContainer.erase(it);
         } 
         else { it++; }
-    }
+    } while (it != refContainer.end());
+
     return memfreed;
 }
 
 // Overload assignment of pointer to Pointer.
 template <class T, int size>
-T *Pointer<T, size>::operator=(T *t){
+T *Pointer<T, size>::operator=(T *t) {
 
     // DONE: Implement operator==
     // LAB: Smart Pointer Project Lab
@@ -220,6 +235,7 @@ void Pointer<T, size>::showlist(){
     }
     std::cout << std::endl;
 }
+
 // Find a pointer in refContainer.
 template <class T, int size>
 typename std::list<PtrDetails<T> >::iterator
