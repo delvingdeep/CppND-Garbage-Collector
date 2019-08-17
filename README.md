@@ -11,3 +11,6 @@ The final project for this Memory Management course is to implement your own ver
 ```bash
 $ ./make
 ```
+
+##### Output:
+<img src="./final_report.png" width="600" height="300">
